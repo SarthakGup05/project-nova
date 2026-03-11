@@ -31,17 +31,22 @@ export async function middleware(request: NextRequest) {
   // Refresh the auth token
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Public routes that don't require authentication
+  const isPublicRoute = 
+    request.nextUrl.pathname === '/' || 
+    request.nextUrl.pathname.startsWith('/login');
+
   // Redirect unauthenticated users to the login page
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from the login page
-  if (user && request.nextUrl.pathname.startsWith('/login')) {
+  // Redirect authenticated users away from the login page or homepage
+  if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname === '/')) {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
 
