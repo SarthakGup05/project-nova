@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -53,13 +54,15 @@ export function Hero() {
 
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto pt-2">
-              <Button
-                size="lg"
-                className="h-14 px-8 text-lg font-medium rounded-full shadow-[0_0_30px_rgba(56,19,208,0.15)] hover:shadow-[0_0_40px_rgba(56,19,208,0.25)] hover:-translate-y-1 transition-all duration-300"
-              >
-                Join the Waitlist
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              <Link href="/signup">
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto h-14 px-8 text-lg font-medium rounded-full shadow-[0_0_30px_rgba(56,19,208,0.15)] hover:shadow-[0_0_40px_rgba(56,19,208,0.25)] hover:-translate-y-1 transition-all duration-300"
+                >
+                  Join the Waitlist
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
               <Button
                 size="lg"
                 variant="outline"

@@ -8,38 +8,40 @@ import { Input } from '@/components/ui/input';
 import { Mail, Lock, Sparkles, Loader2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    console.log('--- LOGIN INITIATED ---');
-    console.log('Attempting login for email:', email);
-
+    console.log('--- SIGNUP INITIATED ---');
+    console.log('Attempting signup for email:', email);
+    
     try {
-      const response = await supabase.auth.signInWithPassword({
+      const response = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
 
-      console.log('Supabase login raw response:', response);
-
+      console.log('Supabase signup raw response:', response);
+      
       if (response.error) {
-        console.error('Login error:', response.error.message);
-        alert(response.error.message); // Replace with a nice toast notification later
+        console.error('Signup error:', response.error.message);
+        alert(response.error.message);
       } else {
-        console.log('Login success! User data:', response.data);
-        router.refresh();
-        router.push('/');
+        console.log('Signup success, check email confirm. User data:', response.data);
+        alert('Check your email for the confirmation link!');
       }
     } catch (err) {
-      console.error('Unexpected exception during login:', err);
+      console.error('Unexpected exception during signup:', err);
     } finally {
       setLoading(false);
     }
@@ -61,16 +63,16 @@ export default function LoginPage() {
             <Sparkles className="w-8 h-8 text-primary relative z-10" />
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight">
-            Welcome to <span className="text-gradient bg-gradient-to-r from-primary to-accent">Nova</span>
+            Create an Account
           </h1>
           <p className="text-muted-foreground text-sm">
-            Enter your credentials to access your workspace
+            Join <span className="text-primary font-semibold">Nova</span> to unlock AI-powered tools
           </p>
         </div>
 
         {/* Form Card */}
         <div className="bg-card/40 backdrop-blur-2xl border border-border rounded-3xl p-8 shadow-2xl">
-          <form className="space-y-5" onSubmit={handleLogin}>
+          <form className="space-y-5" onSubmit={handleSignUp}>
             <div className="space-y-4">
               <div className="space-y-1.5 relative">
                 <label className="text-xs font-semibold text-muted-foreground ml-1 uppercase tracking-wider">Email</label>
@@ -88,10 +90,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-1.5 relative">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-muted-foreground ml-1 uppercase tracking-wider">Password</label>
-                  <Link href="#" className="text-xs text-primary hover:underline decoration-primary/50 pr-1">Forgot password?</Link>
-                </div>
+                <label className="text-xs font-semibold text-muted-foreground ml-1 uppercase tracking-wider">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                   <Input
@@ -100,6 +99,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    minLength={6}
                     className="pl-10 h-12 bg-background/50 border-input focus-visible:ring-primary/50 text-foreground transition-all duration-300 rounded-xl"
                   />
                 </div>
@@ -116,16 +116,16 @@ export default function LoginPage() {
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
-                    Sign In
+                    Sign Up
                     <ArrowRight className="w-4 h-4 ml-2 opacity-70 group-hover:translate-x-1 transition-transform" />
                   </>
                 )}
               </Button>
-              
+
               <div className="text-center text-sm">
-                <span className="text-muted-foreground">Don't have an account? </span>
-                <Link href="/signup" className="text-primary font-semibold hover:underline decoration-primary/50 underline-offset-4">
-                  Sign up
+                <span className="text-muted-foreground">Already have an account? </span>
+                <Link href="/login" className="text-primary font-semibold hover:underline decoration-primary/50 underline-offset-4">
+                  Sign in
                 </Link>
               </div>
             </div>
@@ -133,7 +133,7 @@ export default function LoginPage() {
         </div>
         
         <p className="text-center text-xs text-muted-foreground/60 px-6">
-          By signing in, you agree to our Terms of Service and Privacy Policy.
+          By signing up, you agree to our Terms of Service and Privacy Policy.
         </p>
       </div>
     </div>

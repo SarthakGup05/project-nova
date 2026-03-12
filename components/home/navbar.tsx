@@ -38,7 +38,7 @@ export function Navbar() {
                 Log in
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/signup">
               <Button className="h-9 rounded-full px-5 text-sm font-medium shadow-[0_0_15px_rgba(234,88,12,0.15)] hover:shadow-[0_0_25px_rgba(234,88,12,0.35)] hover:-translate-y-0.5 transition-all duration-300">
                 Get Started
               </Button>
