@@ -2,25 +2,25 @@
 
 ## P0 (Must-Have for MVP)
 - [x] **Local-First CRUD**
-  - [ ] Implement Zustand store
-  - [ ] Instant task creation, reading, updating, deletion
+  - [x] Implement Zustand store
+  - [x] Instant task creation, reading, updating, deletion
   - [x] Supabase backend basic setup
-  - [ ] Optimistic syncing via Supabase real-time subscriptions
-- [ ] **The "Brain Dump" Inbox**
-  - [ ] Create UI component for single text input field
-  - [ ] Setup Vercel AI SDK with Groq (Llama 3) or Gemini API
-  - [ ] Implement GenAI parsing logic (extract tasks, dates, durations, tags)
+  - [x] Optimistic syncing via background sync queue
+- [x] **The "Brain Dump" Inbox**
+  - [x] Create UI component for single text input field
+  - [x] Setup Vercel AI SDK with Groq (Llama 3) or Gemini API
+  - [x] Implement GenAI parsing logic (extract tasks, dates, durations, tags)
 - [ ] **Global Command Palette**
   - [ ] Implement keyboard listener (Cmd/Ctrl + K)
   - [ ] Build command palette UI
   - [ ] Add navigation, search, and manage task actions
-- [ ] **Basic Organization**
-  - [ ] Implement Projects structure
-  - [ ] Implement Tags/Labels system
-  - [ ] Implement basic due dates functionality
-- [ ] **The "Done" Log**
-  - [ ] Create dedicated "Done" view UI
-  - [ ] Implement action to un-check accidental completions
+- [x] **Basic Organization**
+  - [x] Implement Projects structure
+  - [x] Implement Tags/Labels system
+  - [x] Implement basic due dates functionality
+- [x] **The "Done" Log**
+  - [x] Create dedicated "Done" view UI
+  - [x] Implement action to un-check accidental completions
 
 ## P1 (Important for Launch)
 - [ ] **Calendar View & Time-Blocking**
@@ -36,9 +36,9 @@
   - [ ] Integrate LLM to generate witty/cheeky notifications
   - [ ] Implement Web Push API delivery
 - [ ] **Smart Streaks**
-  - [ ] Build visual streak counter UI
+  - [x] Build visual streak counter UI
   - [ ] Implement customizable daily task threshold logic
-  - [ ] Build streak evaluation logic (including automatic rest days)
+  - [/] Build streak evaluation logic (including automatic rest days)
   - [ ] Implement AI "freeze" system
 
 ## P2 (Fast Follows / Expansion)
@@ -52,11 +52,11 @@
 - [ ] **Unlockable Cosmetics**
   - [ ] Implement system to track streak milestones (7, 30, 100 days)
   - [ ] Add visual UI upgrades and custom app icons as unlockables
-  - [ ] Integrate special Framer Motion completion animations at milestones
+  - [x] Integrate special Framer Motion completion animations at milestones
 
 ## Infrastructure Setup (Prerequisites)
-- [ ] Verify Next.js App Router base setup
-- [ ] Install and configure Tailwind CSS + Framer Motion
-- [ ] Install and setup `@ducanh2912/next-pwa`
+- [x] Verify Next.js App Router base setup
+- [x] Install and configure Tailwind CSS + Framer Motion
+- [x] Install and setup `@ducanh2912/next-pwa`
 - [x] Setup Supabase project (Authentication, Database, RLS)
-- [ ] Deploy initial empty frame to Vercel (Hobby Tier)
+- [x] Deploy initial empty frame to Vercel (Hobby Tier)
