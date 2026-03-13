@@ -17,13 +17,13 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
 import { TodayView } from '@/components/dashboard/Todayview'; // Make sure the path matches your actual file name
 import { useTaskStore } from '@/store/useTaskStore';
 
 // --- Framer Motion Variants ---
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
