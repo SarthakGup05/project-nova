@@ -13,7 +13,9 @@ import {
   Inbox,
   CalendarDays,
   LayoutGrid,
-  CheckCircle2
+  CheckCircle2,
+  ListTodo,
+  CheckCircle
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
@@ -48,7 +50,7 @@ const itemVariants = {
       damping: 24 
     } 
   },
-};
+} as const;
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
