@@ -13,8 +13,19 @@ export interface Task {
   tags: string[] | null;
   dueDate: string | null; // ISO string 
   contextDraft: string | null;
+  startTime?: string | null; // ISO string for time blocking
   createdAt: string; // ISO string
   completedAt: string | null; // ISO string
+  syncStatus?: 'synced' | 'pending' | 'error';
+}
+
+export interface Project {
+  id: string;
+  userId: string;
+  name: string;
+  color: string | null;
+  isFavorite: boolean | null;
+  createdAt: string;
   syncStatus?: 'synced' | 'pending' | 'error';
 }
 
@@ -22,6 +33,8 @@ interface TaskState {
   tasks: Task[];
   isLoading: boolean;
   error: string | null;
+  projects: Project[];
+  isProjectsLoading: boolean;
 
   // Actions
   fetchTasks: () => Promise<void>;
@@ -30,9 +43,17 @@ interface TaskState {
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   toggleTaskCompletion: (id: string) => Promise<void>;
+  syncAll: () => Promise<void>;
+
+  // Project Actions
+  fetchProjects: () => Promise<void>;
+  addProject: (name: string, color?: string) => Promise<void>;
+  updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  syncProjects: () => Promise<void>;
+
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
-  syncAll: () => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>()(
@@ -77,6 +98,7 @@ export const useTaskStore = create<TaskState>()(
           estimatedMinutes: taskDetails.estimatedMinutes ?? 15,
           project: taskDetails.project ?? 'Inbox',
           tags: taskDetails.tags ?? [],
+          startTime: taskDetails.startTime ?? null,
           syncStatus: 'pending',
         } as Task;
 
@@ -141,15 +163,8 @@ export const useTaskStore = create<TaskState>()(
         const pendingTasks = get().tasks.filter(t => t.syncStatus === 'pending');
         if (pendingTasks.length === 0) return;
 
-        // Process each pending task
-        // In a real app, you'd batch these or handle concurrency
         for (const task of pendingTasks) {
           try {
-            // Check if it's a new task or an update
-            // (Actually, our API currently handles POST for new and we don't have separate PUT/PATCH logic here)
-            // Let's assume the API handles it or we use the POST/PATCH logic from before
-            
-            // This is a simplified sync loop
             const response = await fetch('/api/tasks', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -161,16 +176,92 @@ export const useTaskStore = create<TaskState>()(
               set((state) => ({
                 tasks: state.tasks.map((t) => (t.id === task.id ? { ...savedTask, syncStatus: 'synced' } : t)),
               }));
-            } else {
-              set((state) => ({
-                tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, syncStatus: 'error' } : t)),
-              }));
             }
           } catch (error) {
             console.error("Sync failed for task:", task.id, error);
-            set((state) => ({
-              tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, syncStatus: 'error' } : t)),
-            }));
+          }
+        }
+      },
+
+      projects: [],
+      isProjectsLoading: false,
+
+      fetchProjects: async () => {
+        set({ isProjectsLoading: true });
+        try {
+          const response = await fetch('/api/projects');
+          if (!response.ok) throw new Error('Failed to fetch projects');
+          const projects = await response.json();
+          set({ 
+            projects: projects.map((p: Project) => ({ ...p, syncStatus: 'synced' })), 
+            isProjectsLoading: false 
+          });
+        } catch (err: any) {
+          set({ isProjectsLoading: false });
+          console.error("Fetch projects failed:", err);
+        }
+      },
+
+      addProject: async (name, color) => {
+        const tempId = crypto.randomUUID();
+        const newProject: Project = {
+          id: tempId,
+          userId: '', // Will be set by API
+          name,
+          color: color || null,
+          isFavorite: false,
+          createdAt: new Date().toISOString(),
+          syncStatus: 'pending',
+        };
+
+        set((state) => ({ projects: [...state.projects, newProject] }));
+        get().syncProjects();
+      },
+
+      updateProject: async (id, updates) => {
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === id ? { ...p, ...updates, syncStatus: 'pending' } : p
+          ),
+        }));
+        get().syncProjects();
+      },
+
+      deleteProject: async (id) => {
+        const projectToDelete = get().projects.find(p => p.id === id);
+        if (!projectToDelete) return;
+
+        set((state) => ({ projects: state.projects.filter((p) => p.id !== id) }));
+
+        if (projectToDelete.syncStatus !== 'pending') {
+          try {
+            await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+          } catch (err) {
+            console.error("Background delete failed for project:", err);
+          }
+        }
+      },
+
+      syncProjects: async () => {
+        const pendingProjects = get().projects.filter(p => p.syncStatus === 'pending');
+        if (pendingProjects.length === 0) return;
+
+        for (const project of pendingProjects) {
+          try {
+            const response = await fetch('/api/projects', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(project),
+            });
+
+            if (response.ok) {
+              const savedProject = await response.json();
+              set((state) => ({
+                projects: state.projects.map((p) => (p.id === project.id ? { ...savedProject, syncStatus: 'synced' } : p)),
+              }));
+            }
+          } catch (error) {
+            console.error("Sync failed for project:", project.id, error);
           }
         }
       },

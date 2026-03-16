@@ -1,0 +1,22 @@
+ M app/api/tasks/route.ts
+ M app/dashboard/page.tsx
+ M components/dashboard/AddTaskDialog.tsx
+ M components/dashboard/Todayview.tsx
+ M components/sidebar-demo.tsx
+ M components/ui/sidebar.tsx
+ M db/schema.ts
+ M store/useTaskStore.ts
+?? app/api/projects/
+?? app/dashboard/calendar/
+?? app/dashboard/completed/
+?? app/dashboard/filters/
+?? app/dashboard/layout.tsx
+?? app/dashboard/project/
+?? changes_debug.txt
+?? components/calendar/
+?? components/dashboard/AddProjectDialog.tsx
+?? components/dashboard/DashboardHeader.tsx
+?? components/dashboard/FiltersAndLabels.tsx
+?? components/dashboard/NotificationPanel.tsx
+?? components/ui/label.tsx
+?? db/migrations/

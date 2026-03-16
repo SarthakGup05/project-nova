@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { db } from '@/db';
-import { tasks } from '@/db/schema';
+import { projects } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 export async function GET() {
@@ -13,14 +13,14 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userTasks = await db.select()
-      .from(tasks)
-      .where(eq(tasks.userId, user.id))
-      .orderBy(desc(tasks.createdAt));
+    const userProjects = await db.select()
+      .from(projects)
+      .where(eq(projects.userId, user.id))
+      .orderBy(desc(projects.createdAt));
 
-    return NextResponse.json(userTasks);
+    return NextResponse.json(userProjects);
   } catch (error) {
-    console.error('Error fetching tasks:', error);
+    console.error('Error fetching projects:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -36,40 +36,32 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // Basic validation
-    if (!body.title) {
-      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+    if (!body.name) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    const newTaskData = {
+    const newProjectData = {
       ...body,
       userId: user.id,
-      id: body.id || crypto.randomUUID(), // Allow client to provide ID for optimistic updates
+      id: body.id || crypto.randomUUID(),
       createdAt: body.createdAt ? new Date(body.createdAt).toISOString() : new Date().toISOString(),
     };
 
-    const insertedTask = await db.insert(tasks)
-      .values(newTaskData)
+    const insertedProject = await db.insert(projects)
+      .values(newProjectData)
       .onConflictDoUpdate({
-        target: tasks.id,
+        target: projects.id,
         set: {
-          title: newTaskData.title,
-          isCompleted: newTaskData.isCompleted,
-          isAiGenerated: newTaskData.isAiGenerated,
-          estimatedMinutes: newTaskData.estimatedMinutes,
-          project: newTaskData.project,
-          tags: newTaskData.tags,
-          dueDate: newTaskData.dueDate,
-          contextDraft: newTaskData.contextDraft,
-          startTime: newTaskData.startTime,
-          completedAt: newTaskData.completedAt,
+          name: newProjectData.name,
+          color: newProjectData.color,
+          isFavorite: newProjectData.isFavorite,
         }
       })
       .returning();
 
-    return NextResponse.json(insertedTask[0], { status: 201 });
+    return NextResponse.json(insertedProject[0], { status: 201 });
   } catch (error) {
-    console.error('Error creating task:', error);
+    console.error('Error creating project:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

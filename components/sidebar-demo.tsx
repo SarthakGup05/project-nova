@@ -3,15 +3,12 @@
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
-import {    
+import {     
   LogOut, 
   Calendar,
   User as UserIcon,
   PlusCircle,
   Activity,
-  Search,
-  Inbox,
-  CalendarDays,
   LayoutGrid,
   CheckCircle2,
   ListTodo,
@@ -26,6 +23,9 @@ import { TaskList } from '@/components/dashboard/TaskList';
 import { motion } from 'framer-motion';
 import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+
+// Make sure to import the AddTaskDialog we created earlier
+import { AddTaskDialog } from './dashboard/AddTaskDialog'; 
 
 // --- Framer Motion Variants ---
 const containerVariants = {
@@ -55,6 +55,8 @@ const itemVariants = {
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [open, setOpen] = useState(false);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false); // Controls our Add Task modal
+  
   const supabase = createClient();
   const router = useRouter();
 
@@ -93,44 +95,36 @@ export default function DashboardPage() {
     day: 'numeric',
   }).format(new Date());
 
- const links = [
+  // Cleaned up links array
+  const links = [
     {
       label: "Add task",
       href: "#",
       icon: <PlusCircle className="w-5 h-5 shrink-0 text-[#d1453b]" />,
       className: "text-[#d1453b] font-medium hover:bg-transparent hover:text-[#d1453b]",
-      rightElement: <Activity className="w-4 h-4 text-[#e77a41]" />
-    },
-    {
-      label: "Search",
-      href: "#",
-      icon: <Search className="w-5 h-5 shrink-0 text-neutral-500" />,
-    },
-    {
-      label: "Inbox",
-      href: "#",
-      icon: <Inbox className="w-5 h-5 shrink-0 text-neutral-500" />,
+      rightElement: <Activity className="w-4 h-4 text-[#e77a41]" />,
+      // We add an onClick handler here to intercept the link and open our dialog instead
+      onClick: (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsTaskDialogOpen(true);
+      }
     },
     {
       label: "Today",
-      href: "#",
+      href: "/dashboard",
       icon: <Calendar className="w-5 h-5 shrink-0" />,
-      active: true, // Triggers the orange bg and red text/icon
-      rightElement: "2",
-    },
-    {
-      label: "Upcoming",
-      href: "#",
-      icon: <CalendarDays className="w-5 h-5 shrink-0 text-neutral-500" />,
+      active: true,
+      // Dynamically display the number of pending tasks
+      rightElement: openTasks.length > 0 ? openTasks.length.toString() : undefined,
     },
     {
       label: "Filters & Labels",
-      href: "#",
+      href: "/filters",
       icon: <LayoutGrid className="w-5 h-5 shrink-0 text-neutral-500" />,
     },
     {
       label: "Completed",
-      href: "#",
+      href: "/completed",
       icon: <CheckCircle2 className="w-5 h-5 shrink-0 text-neutral-500" />,
     },
   ];
@@ -148,7 +142,12 @@ export default function DashboardPage() {
             {open ? <Logo /> : <LogoIcon />}
             <div className="mt-8 flex flex-col gap-2">
               {links.map((link, idx) => (
-                <SidebarLink key={idx} link={link} />
+                <SidebarLink 
+                  key={idx} 
+                  link={link} 
+                  // Pass the onClick down to the anchor tag if it exists
+                  onClick={link.onClick} 
+                />
               ))}
             </div>
           </div>
@@ -156,7 +155,7 @@ export default function DashboardPage() {
             <SidebarLink
               link={{
                 label: user?.user_metadata?.full_name || user?.email || "User",
-                href: "#",
+                href: "/profile",
                 icon: (
                   <div className="h-7 w-7 shrink-0 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
                     <UserIcon className="w-4 h-4 text-neutral-700 dark:text-neutral-200" />
@@ -164,7 +163,6 @@ export default function DashboardPage() {
                 ),
               }}
             />
-            {/* Custom styled logout button to match Aceternity SidebarLink */}
             <button 
               onClick={handleSignOut}
               className="group/sidebar flex items-center justify-start gap-2 py-2 w-full rounded-md transition-colors"
@@ -184,7 +182,7 @@ export default function DashboardPage() {
         </SidebarBody>
       </Sidebar>
 
-      {/* Main Dashboard Wrapper formatted exactly like the snippet */}
+      {/* Main Dashboard Wrapper */}
       <div className="flex flex-1">
         <div className="flex h-full w-full flex-1 flex-col gap-2 rounded-tl-2xl border border-neutral-200 bg-white p-4 md:p-10 dark:border-neutral-700 dark:bg-neutral-900 overflow-y-auto relative">
           
@@ -297,9 +295,17 @@ export default function DashboardPage() {
               </motion.div>
             </motion.div>
           </div>
-
         </div>
       </div>
+
+      {/* Global Add Task Dialog */}
+      <AddTaskDialog
+        userId={user?.id || ""}
+        open={isTaskDialogOpen}
+        onOpenChange={setIsTaskDialogOpen}
+      >
+        <span className="hidden"></span>
+      </AddTaskDialog>
     </div>
   );
 }

@@ -32,19 +32,7 @@ export function TodayView({ userId }: { userId: string }) {
 
   return (
     <div className="max-w-4xl mx-auto w-full py-8 px-4 sm:px-8">
-      {/* Header Section */}
-      <header className="mb-8 space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white flex items-baseline gap-2">
-          Today
-          <span className="text-sm font-normal text-neutral-500 tracking-normal">
-            {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-          </span>
-        </h1>
-        <div className="flex items-center gap-1.5 text-sm text-neutral-500">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>{activeTasks.length} tasks</span>
-        </div>
-      </header>
+      {/* Task List Section */}
 
       {/* Task List Section */}
       <div className="space-y-1">

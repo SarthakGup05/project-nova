@@ -1,4 +1,5 @@
 "use client";
+
 import { cn } from "@/lib/utils";
 import React, { useState, createContext, useContext } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -8,9 +9,10 @@ export interface Links {
   label: string;
   href: string;
   icon: React.JSX.Element | React.ReactNode;
-  rightElement?: React.ReactNode; 
-  active?: boolean;               
-  className?: string;             
+  rightElement?: React.ReactNode;
+  active?: boolean;
+  className?: string;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 interface SidebarContextProps {
@@ -19,9 +21,7 @@ interface SidebarContextProps {
   animate: boolean;
 }
 
-const SidebarContext = createContext<SidebarContextProps | undefined>(
-  undefined
-);
+const SidebarContext = createContext<SidebarContextProps | undefined>(undefined);
 
 export const useSidebar = () => {
   const context = useContext(SidebarContext);
@@ -48,7 +48,7 @@ export const SidebarProvider = ({
   const setOpen = setOpenProp !== undefined ? setOpenProp : setOpenState;
 
   return (
-    <SidebarContext.Provider value={{ open, setOpen, animate: animate }}>
+    <SidebarContext.Provider value={{ open, setOpen, animate }}>
       {children}
     </SidebarContext.Provider>
   );
@@ -88,22 +88,25 @@ export const DesktopSidebar = ({
 }: React.ComponentProps<typeof motion.div>) => {
   const { open, setOpen, animate } = useSidebar();
   return (
-    <>
-      <motion.div
-        className={cn(
-          "h-full px-3 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[280px] shrink-0",
-          className
-        )}
-        animate={{
-          width: animate ? (open ? "280px" : "60px") : "280px",
-        }}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-        {...props}
-      >
-        {children}
-      </motion.div>
-    </>
+    <motion.div
+      className={cn(
+        "h-full px-3 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-900 w-[280px] shrink-0 border-r border-neutral-200 dark:border-neutral-800 z-50",
+        className
+      )}
+      animate={{
+        width: animate ? (open ? "280px" : "68px") : "280px",
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+      }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      {...props}
+    >
+      {children}
+    </motion.div>
   );
 };
 
@@ -114,74 +117,82 @@ export const MobileSidebar = ({
 }: React.ComponentProps<"div">) => {
   const { open, setOpen } = useSidebar();
   return (
-    <>
-      <div
-        className={cn(
-          "h-10 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full"
-        )}
-        {...props}
-      >
-        <div className="flex justify-end z-20 w-full">
-          <IconMenu2
-            className="text-neutral-800 dark:text-neutral-200"
-            onClick={() => setOpen(!open)}
-          />
-        </div>
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              initial={{ x: "-100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "-100%", opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className={cn(
-                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between",
-                className
-              )}
-            >
-              <div
-                className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer"
-                onClick={() => setOpen(!open)}
-              >
-                <IconX />
-              </div>
-              {children}
-            </motion.div>
-          )}
-        </AnimatePresence>
+    <div
+      className={cn(
+        "h-14 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-900 w-full border-b border-neutral-200 dark:border-neutral-800"
+      )}
+      {...props}
+    >
+      <div className="flex justify-end z-20 w-full">
+        <button
+          aria-label="Open Menu"
+          onClick={() => setOpen(!open)}
+          className="p-1 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+        >
+          <IconMenu2 className="text-neutral-800 dark:text-neutral-200" />
+        </button>
       </div>
-    </>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ x: "-100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "-100%", opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className={cn(
+              "fixed h-full w-full inset-0 bg-white dark:bg-neutral-950 p-10 z-[100] flex flex-col justify-between",
+              className
+            )}
+          >
+            <button
+              aria-label="Close Menu"
+              className="absolute right-6 top-6 z-50 p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 transition-colors"
+              onClick={() => setOpen(!open)}
+            >
+              <IconX />
+            </button>
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
 export const SidebarLink = ({
   link,
   className,
+  onClick,
   ...props
 }: {
   link: Links;
   className?: string;
+  onClick?: (e: React.MouseEvent) => void;
 }) => {
   const { open, animate } = useSidebar();
-  
+
   return (
     <a
       href={link.href}
+      onClick={onClick || link.onClick}
       className={cn(
-        "flex items-center justify-start gap-3 group/sidebar py-2 px-3 rounded-lg transition-all duration-200",
-        // EXACT LINK STYLING: Active is Dark Blue bg & White text. Inactive is Black text. Hover turns Dark Blue.
-        link.active 
-          ? "bg-blue-900 text-white shadow-sm" 
-          : "text-black hover:bg-blue-900 hover:text-white dark:text-neutral-200 dark:hover:bg-blue-900",
+        "flex items-center justify-start gap-3 group/sidebar py-2.5 px-3 rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+        link.active
+          ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+          : "text-neutral-600 hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100",
         className,
         link.className
       )}
       {...props}
     >
-      <div className={cn(
-        "shrink-0 transition-colors duration-200",
-        link.active ? "text-white" : "text-black group-hover/sidebar:text-white dark:text-neutral-200"
-      )}>
+      <div
+        className={cn(
+          "shrink-0 transition-colors duration-200",
+          link.active
+            ? "text-white"
+            : "text-neutral-500 group-hover/sidebar:text-blue-700 dark:text-neutral-400 dark:group-hover/sidebar:text-neutral-100"
+        )}
+      >
         {link.icon}
       </div>
 
@@ -190,24 +201,27 @@ export const SidebarLink = ({
           display: animate ? (open ? "flex" : "none") : "flex",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
+        transition={{ duration: 0.15 }}
         className="flex-1 flex items-center justify-between whitespace-nowrap overflow-hidden"
       >
         <span
           className={cn(
-            "text-[14px] group-hover/sidebar:translate-x-0.5 transition duration-150 !p-0 !m-0",
-            link.active ? "font-semibold tracking-wide text-white" : "font-medium tracking-wide text-black group-hover/sidebar:text-white dark:text-neutral-200"
+            "text-sm group-hover/sidebar:translate-x-0.5 transition-transform duration-200",
+            link.active
+              ? "font-semibold tracking-wide text-white"
+              : "font-medium text-inherit"
           )}
         >
           {link.label}
         </span>
-        
+
         {link.rightElement && (
-          <span 
+          <span
             className={cn(
-              "text-xs font-bold px-1.5 py-0.5 rounded-md transition-colors duration-200",
-              link.active 
-                ? "bg-white/20 text-white" 
-                : "bg-neutral-200 text-black group-hover/sidebar:bg-white/20 group-hover/sidebar:text-white dark:bg-neutral-700 dark:text-neutral-300"
+              "text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors duration-200",
+              link.active
+                ? "bg-white/20 text-white"
+                : "bg-neutral-200 text-neutral-600 group-hover/sidebar:bg-blue-100 group-hover/sidebar:text-blue-700 dark:bg-neutral-800 dark:text-neutral-300 dark:group-hover/sidebar:bg-neutral-700"
             )}
           >
             {link.rightElement}
@@ -215,5 +229,41 @@ export const SidebarLink = ({
         )}
       </motion.div>
     </a>
+  );
+};
+
+export const SidebarGroup = ({
+  label,
+  children,
+  className,
+  action,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+  action?: React.ReactNode;
+}) => {
+  const { open, animate } = useSidebar();
+  
+  return (
+    <div className={cn("flex flex-col gap-1 mt-6", className)}>
+      <motion.div
+        animate={{
+          opacity: animate ? (open ? 1 : 0) : 1,
+          display: animate ? (open ? "block" : "none") : "block",
+        }}
+        className="flex items-center justify-between px-3 mb-2"
+      >
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-400">
+          {label}
+        </h3>
+        {action && (
+          <div className="flex items-center">
+            {action}
+          </div>
+        )}
+      </motion.div>
+      {children}
+    </div>
   );
 };

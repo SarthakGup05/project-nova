@@ -23,6 +23,16 @@ export const tasks = pgTable('tasks', {
   tags: text('tags').array().default(sql`'{}'::text[]`),
   dueDate: timestamp('due_date', { withTimezone: true, mode: 'string' }),
   contextDraft: text('context_draft'),
+  startTime: timestamp('start_time', { withTimezone: true, mode: 'string' }),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
   completedAt: timestamp('completed_at', { withTimezone: true, mode: 'string' }),
+});
+
+export const projects = pgTable('projects', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  color: text('color'),
+  isFavorite: boolean('is_favorite').default(false),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
