@@ -2,7 +2,7 @@
 
 import { useTaskStore, Task } from '@/store/useTaskStore';
 import { useParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -131,6 +131,17 @@ function TaskGroup({
 }
 
 function ProjectTaskItem({ task, onToggle }: { task: Task; onToggle: () => void }) {
+  const prevIsCompleted = useRef(task.isCompleted);
+
+  useEffect(() => {
+    if (task.isCompleted && !prevIsCompleted.current) {
+      const audio = new Audio('/sounds/penciil check.mp3');
+      audio.volume = 0.6;
+      audio.play().catch(err => console.error("Error playing sound:", err));
+    }
+    prevIsCompleted.current = task.isCompleted;
+  }, [task.isCompleted]);
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: -10 }}
@@ -152,17 +163,27 @@ function ProjectTaskItem({ task, onToggle }: { task: Task; onToggle: () => void 
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className={cn(
-            "text-base font-medium transition-all",
-            task.isCompleted ? "text-muted-foreground line-through opacity-60" : "text-foreground"
-          )}>
-            {task.title}
-          </p>
-          {task.tags && task.tags.length > 0 && (
-            <span className="text-[10px] text-muted-foreground bg-accent/10 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">
-              (Watch)
-            </span>
-          )}
+          <div className="relative inline-flex w-fit max-w-full">
+            <p className={cn(
+              "text-base font-medium transition-colors duration-300 block truncate",
+              task.isCompleted ? "text-muted-foreground" : "text-foreground"
+            )}>
+              {task.title}
+            </p>
+            <AnimatePresence initial={false}>
+              {task.isCompleted && (
+                <motion.div
+                  key="strikethrough"
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: "100%", opacity: 0.6 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={{ duration: 0.8, ease: "easeInOut" }}
+                  className="absolute left-0 top-1/2 mt-[1px] h-[2px] bg-muted-foreground origin-left"
+                />
+              )}
+            </AnimatePresence>
+          </div>
+
         </div>
         
         {task.contextDraft && (
@@ -184,9 +205,9 @@ function ProjectTaskItem({ task, onToggle }: { task: Task; onToggle: () => void 
             <span>1</span>
           </div>
           
-          <div className="flex items-center gap-1 text-muted-foreground/60 shrink-0">
-            <PlayCircle className="w-3 h-3" />
-            <span className="hover:underline cursor-pointer">Watch Video</span>
+          <div className="flex items-center gap-1 shrink-0 opacity-60">
+            <Clock className="w-3 h-3" />
+            <span>Added {new Date(task.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
           </div>
         </div>
       </div>

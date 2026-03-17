@@ -130,7 +130,7 @@ export function MonthGrid({ selectedDate, onDayClick, onAddTaskClick }: MonthGri
                     className={cn(
                       "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-semibold truncate transition-colors border",
                       task.isCompleted 
-                        ? "bg-muted text-muted-foreground/60 border-transparent line-through" 
+                        ? "bg-muted text-muted-foreground/60 border-transparent" 
                         : "bg-background/80 text-foreground/80 border-border shadow-sm hover:border-accent"
                     )}
                   >
