@@ -29,6 +29,14 @@ export interface Project {
   syncStatus?: 'synced' | 'pending' | 'error';
 }
 
+export interface FilterFolder {
+  id: string;
+  name: string;
+  itemIds: string[]; // IDs of tags or projects in this folder
+  type: 'tag' | 'project';
+  createdAt: string;
+}
+
 interface TaskState {
   tasks: Task[];
   isLoading: boolean;
@@ -54,6 +62,14 @@ interface TaskState {
 
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
+
+  // Folder Actions
+  folders: FilterFolder[];
+  addFolder: (name: string, type: 'tag' | 'project') => Promise<void>;
+  updateFolder: (id: string, updates: Partial<FilterFolder>) => Promise<void>;
+  deleteFolder: (id: string) => Promise<void>;
+  addItemToFolder: (folderId: string, itemId: string) => Promise<void>;
+  removeItemFromFolder: (folderId: string, itemId: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>()(
@@ -80,8 +96,9 @@ export const useTaskStore = create<TaskState>()(
             ], 
             isLoading: false 
           });
-        } catch (err: any) {
-          set({ error: err.message, isLoading: false });
+        } catch (err: unknown) {
+          const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+          set({ error: errorMessage, isLoading: false });
         }
       },
 
@@ -268,6 +285,44 @@ export const useTaskStore = create<TaskState>()(
 
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
+
+      folders: [],
+      addFolder: async (name, type) => {
+        const newFolder: FilterFolder = {
+          id: crypto.randomUUID(),
+          name,
+          type,
+          itemIds: [],
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ folders: [...state.folders, newFolder] }));
+      },
+      updateFolder: async (id: string, updates: Partial<FilterFolder>) => {
+        set((state) => ({
+          folders: state.folders.map(f => f.id === id ? { ...f, ...updates } : f)
+        }));
+      },
+      deleteFolder: async (id: string) => {
+        set((state) => ({ folders: state.folders.filter(f => f.id !== id) }));
+      },
+      addItemToFolder: async (folderId: string, itemId: string) => {
+        set((state) => ({
+          folders: state.folders.map(f => 
+            f.id === folderId 
+              ? { ...f, itemIds: Array.from(new Set([...f.itemIds, itemId])) } 
+              : f
+          )
+        }));
+      },
+      removeItemFromFolder: async (folderId: string, itemId: string) => {
+        set((state) => ({
+          folders: state.folders.map(f => 
+            f.id === folderId 
+              ? { ...f, itemIds: f.itemIds.filter(item => item !== itemId) } 
+              : f
+          )
+        }));
+      },
     }),
     {
       name: 'nova-tasks-storage',
