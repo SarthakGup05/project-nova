@@ -12,7 +12,8 @@ import {
   CalendarDays,
   LayoutGrid,
   CheckCircle2,
-  Hash
+  Hash,
+  Trophy
 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { User } from '@supabase/supabase-js';
@@ -119,6 +120,12 @@ export default function DashboardLayout({
       href: "/dashboard/completed",
       icon: <CheckCircle2 className="w-5 h-5 shrink-0" />,
       active: pathname === "/dashboard/completed",
+    },
+    {
+      label: "Achievements",
+      href: "/dashboard/achievements",
+      icon: <Trophy className="w-5 h-5 shrink-0" />,
+      active: pathname === "/dashboard/achievements",
     },
   ];
 
