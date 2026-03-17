@@ -159,7 +159,7 @@ export function Hero() {
                       </div>
                       <div className="flex-1 space-y-1">
                         <p
-                          className={`text-base font-medium leading-none ${task.done ? "text-muted-foreground line-through" : "text-foreground"}`}
+                          className={`text-base font-medium leading-none ${task.done ? "text-muted-foreground opacity-60" : "text-foreground"}`}
                         >
                           {task.title}
                         </p>

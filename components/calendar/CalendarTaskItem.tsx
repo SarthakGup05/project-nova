@@ -1,12 +1,49 @@
 'use client';
 
-import React from 'react';
-import { Task } from '@/store/useTaskStore';
-import { motion } from 'framer-motion';
+import React, { useEffect } from 'react';
+import { Task, useTaskStore } from '@/store/useTaskStore';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Circle, Hash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// 1. Shared audio instance for all Calendar tasks
+let checkSound: HTMLAudioElement | null = null;
+
 export function CalendarTaskItem({ task }: { task: Task }) {
+  const toggleTaskCompletion = useTaskStore((state) => state.toggleTaskCompletion);
+
+  // 2. Pre-load the sound silently when the component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !checkSound) {
+      checkSound = new Audio('/sounds/penciil check.mp3');
+      checkSound.volume = 0.6;
+      checkSound.load();
+    }
+  }, []);
+
+  // 3. Handle the toggle and sound on click
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevents the click from bubbling up if the whole card is clickable later
+    
+    if (!task.isCompleted) {
+      try {
+        if (checkSound) {
+          checkSound.currentTime = 0;
+          checkSound.play().catch(err => console.error("Audio playback prevented:", err));
+        }
+        
+        // Bonus: Add a subtle haptic vibration for mobile users
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+      } catch (error) {
+        console.error("Error playing audio:", error);
+      }
+    }
+    
+    toggleTaskCompletion(task.id);
+  };
+
   const startTime = new Date(task.startTime!);
   const duration = task.estimatedMinutes || 30;
   
@@ -38,22 +75,49 @@ export function CalendarTaskItem({ task }: { task: Task }) {
       )}
     >
       <div className="flex items-start gap-2 h-full">
-        <div className="mt-0.5 shrink-0">
-          {task.isCompleted ? (
-            <CheckCircle2 className="w-3.5 h-3.5" />
-          ) : (
-            <Circle className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
-          )}
-        </div>
+        {/* Made the checkmark interactive with an onClick and spring animation */}
+        <button 
+          onClick={handleToggle}
+          className="mt-0.5 shrink-0 outline-none"
+        >
+          <motion.div
+            whileTap={{ scale: 0.8 }}
+            whileHover={{ scale: 1.2 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            {task.isCompleted ? (
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            ) : (
+              <Circle className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+            )}
+          </motion.div>
+        </button>
         
         <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
           <div>
-            <p className={cn(
-              "text-xs font-bold leading-tight truncate",
-              task.isCompleted && "line-through"
-            )}>
-              {task.title}
-            </p>
+            {/* Switched to inline-flex w-fit to fix the strikethrough width issue */}
+            <div className="relative inline-flex w-fit max-w-full">
+              <p className={cn(
+                "text-xs font-bold leading-tight truncate block transition-colors duration-300",
+                task.isCompleted && "text-current"
+              )}>
+                {task.title}
+              </p>
+              
+              {/* Removed mode="wait" for snappier animation */}
+              <AnimatePresence initial={false}>
+                {task.isCompleted && (
+                  <motion.div
+                    key="strikethrough"
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: "100%", opacity: 0.6 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ duration: 0.8, ease: "easeInOut" }}
+                    className="absolute left-0 top-1/2 mt-[0.5px] h-[2px] bg-current origin-left opacity-60"
+                  />
+                )}
+              </AnimatePresence>
+            </div>
             
             {duration >= 45 && (
               <div className="flex items-center gap-2 mt-1">
