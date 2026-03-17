@@ -18,6 +18,7 @@
   - [x] Implement Projects structure
   - [x] Implement Tags/Labels system
   - [x] Implement basic due dates functionality
+  - [x] Implement folders for projects and labels <!-- id: folder_org -->
 - [x] **The "Done" Log**
   - [x] Create dedicated "Done" view UI
   - [x] Implement action to un-check accidental completions
@@ -38,7 +39,7 @@
 - [ ] **Smart Streaks**
   - [x] Build visual streak counter UI
   - [ ] Implement customizable daily task threshold logic
-  - [/] Build streak evaluation logic (including automatic rest days)
+  - [x] Build streak evaluation logic (including automatic rest days) <!-- id: streak_logic -->
   - [ ] Implement AI "freeze" system
 
 ## P2 (Fast Follows / Expansion)
@@ -49,10 +50,12 @@
   - [ ] Build cron job for end-of-week timing
   - [ ] Prompt AI to generate reports summarizing the "Done" log, trends, wins
   - [ ] Build report UI and notification
-- [ ] **Unlockable Cosmetics**
-  - [ ] Implement system to track streak milestones (7, 30, 100 days)
-  - [ ] Add visual UI upgrades and custom app icons as unlockables
+- [x] **Unlockable Cosmetics**
+  - [x] Implement system to track streak milestones and task counts <!-- id: milestones -->
+  - [x] Add visual UI upgrades and custom app icons as unlockables
+  - [x] Implement Achievements Page dashboard with premium animations <!-- id: achievements_page -->
   - [x] Integrate special Framer Motion completion animations at milestones
+  - [x] Implement Premium Tiered Badge system (Bronze to Diamond) <!-- id: badge_system -->
 
 ## Infrastructure Setup (Prerequisites)
 - [x] Verify Next.js App Router base setup
