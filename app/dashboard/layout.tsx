@@ -23,6 +23,9 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { useTaskStore } from '@/store/useTaskStore';
 import { AddTaskDialog } from '@/components/dashboard/AddTaskDialog';
 import { AddProjectDialog } from '@/components/dashboard/AddProjectDialog';
+import { NotificationToast } from '@/components/dashboard/NotificationToast';
+import { BroadcastNotification } from '@/components/admin/BroadcastNotification';
+import { useNotificationStore } from '@/store/useNotificationStore';
 
 export default function DashboardLayout({
   children,
@@ -58,6 +61,33 @@ export default function DashboardLayout({
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
     });
+  }, [supabase]);
+
+  // Global Notifications Realtime Listener
+  useEffect(() => {
+    const channel = supabase
+      .channel('global-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'global_notifications'
+        },
+        (payload) => {
+          const newNotif = payload.new;
+          useNotificationStore.getState().addNotification({
+            type: (newNotif.type as any) || 'info',
+            title: newNotif.title,
+            message: newNotif.message
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [supabase]);
 
   useEffect(() => {
@@ -127,6 +157,12 @@ export default function DashboardLayout({
       icon: <Trophy className="w-5 h-5 shrink-0" />,
       active: pathname === "/dashboard/achievements",
     },
+    {
+      label: "Profile",
+      href: "/dashboard/profile",
+      icon: <UserIcon className="w-5 h-5 shrink-0" />,
+      active: pathname === "/dashboard/profile",
+    },
   ];
 
   return (
@@ -165,7 +201,7 @@ export default function DashboardLayout({
               </SidebarGroup>
             )}
           </div>
-          
+           
           <div className="flex flex-col gap-2">
             <SidebarLink
               link={{
@@ -215,6 +251,9 @@ export default function DashboardLayout({
         open={isProjectDialogOpen}
         onOpenChange={setIsProjectDialogOpen}
       />
+
+      <NotificationToast />
+      <BroadcastNotification />
     </div>
   );
 }
