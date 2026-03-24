@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -42,25 +42,39 @@ const PRESET_COLORS = [
 export function AddProjectDialog({ 
   children,
   open: externalOpen,
-  onOpenChange: externalOnOpenChange
+  onOpenChange: externalOnOpenChange,
+  initialData,
+  onSubmit: externalSubmit
 }: { 
   children?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  initialData?: { name: string; color: string | null };
+  onSubmit?: (name: string, color: string) => Promise<void>;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = externalOnOpenChange !== undefined ? externalOnOpenChange : setInternalOpen;
   
-  const [projectName, setProjectName] = useState("");
-  const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[11].value); // Default Blue
+  const [projectName, setProjectName] = useState(initialData?.name || "");
+  const [selectedColor, setSelectedColor] = useState(initialData?.color || PRESET_COLORS[11].value); // Default Blue
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const addProject = useTaskStore((state) => state.addProject);
 
+  // Update fields when initialData changes (e.g. when opening for a different project)
+  useEffect(() => {
+    if (open && initialData) {
+      setProjectName(initialData.name);
+      setSelectedColor(initialData.color || PRESET_COLORS[11].value);
+    }
+  }, [open, initialData]);
+
   const handleReset = () => {
-    setProjectName("");
-    setSelectedColor(PRESET_COLORS[11].value);
+    if (!initialData) {
+      setProjectName("");
+      setSelectedColor(PRESET_COLORS[11].value);
+    }
     setIsSubmitting(false);
   };
 
@@ -70,11 +84,15 @@ export function AddProjectDialog({
 
     setIsSubmitting(true);
     try {
-      await addProject(projectName, selectedColor);
+      if (externalSubmit) {
+        await externalSubmit(projectName, selectedColor);
+      } else {
+        await addProject(projectName, selectedColor);
+      }
       setOpen(false);
       handleReset();
     } catch (error) {
-      console.error("Failed to add project:", error);
+      console.error("Failed to save project:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -91,7 +109,9 @@ export function AddProjectDialog({
       
       <DialogContent className="sm:max-w-md bg-background/80 backdrop-blur-xl border-accent/20">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold tracking-tight">Add Project</DialogTitle>
+          <DialogTitle className="text-xl font-bold tracking-tight">
+            {initialData ? 'Edit Project' : 'Add Project'}
+          </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
@@ -144,7 +164,7 @@ export function AddProjectDialog({
               disabled={!projectName.trim() || isSubmitting}
               className="bg-accent text-accent-foreground hover:bg-accent/90"
             >
-              {isSubmitting ? "Adding..." : "Add project"}
+              {isSubmitting ? "Saving..." : initialData ? "Save Changes" : "Add Project"}
             </Button>
           </DialogFooter>
         </form>

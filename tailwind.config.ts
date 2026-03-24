@@ -67,16 +67,24 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        // Custom animation for the AI Sparkle effect
         "pulse-glow": {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.5", filter: "drop-shadow(0 0 8px hsl(var(--accent)))" },
+        },
+        wiggle: {
+          "0%, 100%": { transform: "rotate(-3deg)" },
+          "50%": { transform: "rotate(3deg)" },
+        },
+        shimmer: {
+          "100%": { transform: "translateX(100%)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-glow": "pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        wiggle: "wiggle 0.3s ease-in-out infinite",
+        shimmer: "shimmer 2s infinite",
       },
     },
   },

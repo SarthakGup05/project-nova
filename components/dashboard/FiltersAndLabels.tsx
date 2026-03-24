@@ -7,25 +7,44 @@ import {
   Tag, 
   Folder, 
   Hash, 
-  Plus, 
   X, 
-  FolderInput,
-  FolderPlus
+  FolderPlus,
+  Layers,
+  LayoutGrid,
+  Filter,
+  Plus,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FolderCard } from '@/components/dashboard/filters/FolderCard';
+import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
+import { MoveToFolderPopOver } from '@/components/dashboard/filters/MoveToFolderPopOver';
+import { AddProjectDialog } from '@/components/dashboard/AddProjectDialog';
 
 export function FiltersAndLabels() {
+  const [activeTab, setActiveTab] = useState<'projects' | 'labels'>('projects');
+  const [searchQuery, setSearchQuery] = useState('');
+  
   const tasks = useTaskStore((state) => state.tasks);
+  const projects = useTaskStore((state) => state.projects);
   const folders = useTaskStore((state) => state.folders);
+  
   const addFolder = useTaskStore((state) => state.addFolder);
   const deleteFolder = useTaskStore((state) => state.deleteFolder);
   const updateFolder = useTaskStore((state) => state.updateFolder);
   const addItemToFolder = useTaskStore((state) => state.addItemToFolder);
   const removeItemFromFolder = useTaskStore((state) => state.removeItemFromFolder);
+  const updateProject = useTaskStore((state) => state.updateProject);
+  const deleteProject = useTaskStore((state) => state.deleteProject);
+  const renameTag = useTaskStore((state) => state.renameTag);
+  const deleteTag = useTaskStore((state) => state.deleteTag);
 
   const [newFolderName, setNewFolderName] = useState('');
-  const [showFolderInput, setShowFolderInput] = useState<'tag' | 'project' | null>(null);
+  const [showFolderInput, setShowFolderInput] = useState<boolean>(false);
+  
+  // State for Project Editing
+  const [editingProject, setEditingProject] = useState<{ id: string; name: string; color: string | null } | null>(null);
 
   // Extract unique tags and their counts
   const tagCounts = React.useMemo(() => {
@@ -35,32 +54,69 @@ export function FiltersAndLabels() {
         counts[tag] = (counts[tag] || 0) + 1;
       });
     });
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [tasks]);
+    return Object.entries(counts)
+      .filter(([tag]) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      .sort((a, b) => b[1] - a[1]);
+  }, [tasks, searchQuery]);
 
-  // Extract unique projects and their counts
-  const projectCounts = React.useMemo(() => {
+  // Extract unique project names and their counts from tasks 
+  // (Note: we should also show projects from the store even if they have no tasks)
+  const projectStats = React.useMemo(() => {
     const counts: Record<string, number> = {};
     tasks.forEach(task => {
       const project = task.project || 'Inbox';
       counts[project] = (counts[project] || 0) + 1;
     });
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [tasks]);
 
-  const handleCreateFolder = async (type: 'tag' | 'project') => {
+    // Merge with actual projects from store
+    const allProjectNames = new Set([...Object.keys(counts), ...projects.map(p => p.name)]);
+    return Array.from(allProjectNames)
+      .filter(name => name.toLowerCase().includes(searchQuery.toLowerCase()))
+      .map(name => ({
+        name,
+        count: counts[name] || 0,
+        projectData: projects.find(p => p.name === name)
+      }));
+  }, [tasks, projects, searchQuery]);
+
+  const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
-    await addFolder(newFolderName.trim(), type);
+    await addFolder(newFolderName.trim(), activeTab === 'projects' ? 'project' : 'tag');
     setNewFolderName('');
-    setShowFolderInput(null);
+    setShowFolderInput(false);
   };
 
-  const handleMoveToFolder = async (folderId: string, itemId: string) => {
+  const handleMoveToFolder = async (itemId: string, folderId: string | 'none') => {
     const itemFolders = folders.filter(f => f.itemIds.includes(itemId));
     for (const f of itemFolders) {
       await removeItemFromFolder(f.id, itemId);
     }
-    await addItemToFolder(folderId, itemId);
+    if (folderId !== 'none') {
+      await addItemToFolder(folderId, itemId);
+    }
+  };
+
+  const handleRenameTag = async (oldTag: string) => {
+    const newTag = prompt(`Rename tag "${oldTag}" to:`, oldTag);
+    if (newTag && newTag.trim() && newTag !== oldTag) {
+      await renameTag(oldTag, newTag.trim());
+    }
+  };
+
+  const handleDeleteTag = async (tag: string) => {
+    if (confirm(`Are you sure you want to delete the tag "${tag}"? It will be removed from all tasks.`)) {
+      await deleteTag(tag);
+    }
+  };
+
+  const handleDeleteProject = async (id: string, name: string) => {
+    if (name === 'Inbox') {
+      alert("The Inbox project cannot be deleted.");
+      return;
+    }
+    if (confirm(`Are you sure you want to delete the project "${name}"? This action cannot be undone.`)) {
+      await deleteProject(id);
+    }
   };
 
   // --- Animation Variants ---
@@ -83,54 +139,60 @@ export function FiltersAndLabels() {
   } as const;
 
   // --- Renderers ---
-  const renderProjectItem = ([project, count]: [string, number]) => {
-    const currentFolder = folders.find(f => f.itemIds.includes(project));
+  const renderProjectItem = ({ name, count, projectData }: { name: string, count: number, projectData?: any }) => {
+    const currentFolder = folders.find(f => f.type === 'project' && f.itemIds.includes(name));
+    const projectColor = projectData?.color || '#3b82f6';
     
     return (
       <motion.div
-        key={project}
+        key={name}
         variants={itemVariants}
         whileHover={{ y: -4, scale: 1.02 }}
-        className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm hover:border-blue-500/40 hover:shadow-[0_8px_30px_rgb(59,130,246,0.12)] transition-all duration-300 min-w-[200px]"
+        className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm hover:border-primary/40 hover:shadow-[0_8px_30px_rgba(var(--primary),0.12)] transition-all duration-300 min-w-[240px]"
       >
-        {/* Subtle hover gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div 
+          className="absolute inset-x-0 top-0 h-1 opacity-60 transition-opacity group-hover:opacity-100" 
+          style={{ backgroundColor: projectColor }}
+        />
         
-        <div className="relative p-5 flex items-start justify-between z-10">
-          <div className="space-y-1.5">
-            <p className="text-sm font-extrabold text-foreground group-hover:text-blue-500 transition-colors uppercase tracking-wider truncate max-w-[140px]">
-              {project}
+        <div className="relative p-5 flex items-start justify-between z-10 gap-2">
+          <div className="space-y-2 flex-1 min-w-0">
+            <p className="text-sm font-black text-foreground group-hover:text-primary transition-colors uppercase tracking-[0.1em] truncate">
+              {name}
             </p>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md">
+              <span className="text-[10px] font-bold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md uppercase tracking-wider">
                 {count} {count === 1 ? 'task' : 'tasks'}
               </span>
             </div>
           </div>
           
-          {/* Action Button & Select Overlay */}
-          <div className="relative w-8 h-8 rounded-full bg-blue-500/5 group-hover:bg-blue-500/10 flex items-center justify-center text-blue-500 transition-colors">
-            <FolderInput className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
-            <select 
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-              title="Move to folder"
-              onChange={async (e) => {
-                const val = e.target.value;
-                if (val === 'none') {
-                  if (currentFolder) await removeItemFromFolder(currentFolder.id, project);
-                } else {
-                  await handleMoveToFolder(val, project);
-                }
-              }}
-              value={currentFolder?.id || 'none'}
-            >
-              <option value="none" className="font-bold">Uncategorized</option>
-              <optgroup label="Move to Folder...">
-                {folders.filter(f => f.type === 'project').map(f => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-                ))}
-              </optgroup>
-            </select>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {projectData && (
+              <>
+                <button
+                  onClick={() => setEditingProject({ id: projectData.id, name: projectData.name, color: projectData.color })}
+                  className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-colors"
+                  title="Edit Project"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleDeleteProject(projectData.id, name)}
+                  className="p-1.5 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors"
+                  title="Delete Project"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+            <MoveToFolderPopOver 
+              type="project"
+              itemName={name}
+              currentFolderId={currentFolder?.id}
+              folders={folders}
+              onMove={(folderId) => handleMoveToFolder(name, folderId)}
+            />
           </div>
         </div>
       </motion.div>
@@ -138,250 +200,265 @@ export function FiltersAndLabels() {
   };
 
   const renderTagItem = ([tag, count]: [string, number]) => {
-    const currentFolder = folders.find(f => f.itemIds.includes(tag));
+    const currentFolder = folders.find(f => f.type === 'tag' && f.itemIds.includes(tag));
 
     return (
       <motion.div
         key={tag}
         variants={itemVariants}
         whileHover={{ scale: 1.05 }}
-        className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-full border border-border/50 bg-card/30 backdrop-blur-sm hover:border-accent/40 hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all cursor-pointer overflow-hidden"
+        className="group relative flex items-center gap-2 pl-4 pr-1.5 py-1.5 rounded-full border border-border/50 bg-card/30 backdrop-blur-sm hover:border-accent/40 hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all cursor-pointer overflow-hidden"
       >
-        <Hash className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
-        <span className="text-sm font-bold text-foreground/80 group-hover:text-foreground transition-colors">{tag}</span>
-        <span className="text-[11px] bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 group-hover:bg-accent/20 group-hover:text-accent px-2 py-0.5 rounded-full font-bold min-w-[1.5rem] text-center transition-colors">
+        <Hash className="w-3.5 h-3.5 text-muted-foreground group-hover:text-accent transition-colors" />
+        <span className="text-sm font-bold text-foreground/80 group-hover:text-foreground transition-colors max-w-[120px] truncate">{tag}</span>
+        <span className="text-[10px] bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 group-hover:bg-accent/20 group-hover:text-accent px-2 py-0.5 rounded-full font-black min-w-[1.5rem] text-center transition-colors">
           {count}
         </span>
         
-        {/* Invisible Select Overlay over the entire pill */}
-        <select 
-          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-          title="Move tag to folder"
-          onChange={async (e) => {
-            const val = e.target.value;
-            if (val === 'none') {
-              if (currentFolder) await removeItemFromFolder(currentFolder.id, tag);
-            } else {
-              await handleMoveToFolder(val, tag);
-            }
-          }}
-          value={currentFolder?.id || 'none'}
-        >
-          <option value="none">Uncategorized</option>
-          <optgroup label="Folders">
-            {folders.filter(f => f.type === 'tag').map(f => (
-              <option key={f.id} value={f.id}>{f.name}</option>
-            ))}
-          </optgroup>
-        </select>
+        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={() => handleRenameTag(tag)}
+            className="p-1 hover:bg-accent/10 text-accent rounded-lg transition-colors"
+            title="Rename Label"
+          >
+            <Edit2 className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => handleDeleteTag(tag)}
+            className="p-1 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors"
+            title="Delete Label"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+          <MoveToFolderPopOver 
+            type="tag"
+            itemName={tag}
+            currentFolderId={currentFolder?.id}
+            folders={folders}
+            onMove={(folderId) => handleMoveToFolder(tag, folderId)}
+          />
+        </div>
       </motion.div>
     );
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-20 pb-20 relative">
-      
+    <div className="w-full max-w-5xl mx-auto space-y-12 pb-20 relative">
+      <AddProjectDialog 
+        open={!!editingProject}
+        onOpenChange={(open) => !open && setEditingProject(null)}
+        initialData={editingProject ? { name: editingProject.name, color: editingProject.color } : undefined}
+        onSubmit={async (name, color) => {
+          if (editingProject) {
+            await updateProject(editingProject.id, { name, color });
+            setEditingProject(null);
+          }
+        }}
+      />
+
       {/* Background Decorative Elements */}
-      <div className="absolute top-20 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
+      <div className="absolute top-20 left-10 w-96 h-96 bg-primary/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
       <div className="absolute bottom-40 right-10 w-96 h-96 bg-accent/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
-      {/* --- Projects Section --- */}
-      <section className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/20 flex items-center justify-center shadow-inner">
-              <Folder className="w-6 h-6 text-blue-500" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-black tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                PROJECTS
-              </h2>
-              <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest mt-1">Structure your workspace</p>
-            </div>
+      {/* Header & Tabs */}
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex p-1.5 bg-muted/40 backdrop-blur-xl rounded-[2rem] border border-border/40 w-fit shadow-inner">
+            <button
+              onClick={() => setActiveTab('projects')}
+              className={cn(
+                "flex items-center gap-3 px-8 py-3 rounded-2xl text-sm font-black uppercase tracking-widest transition-all duration-500",
+                activeTab === 'projects' 
+                  ? "bg-primary text-white shadow-lg shadow-primary/25" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-white/5"
+              )}
+            >
+              <LayoutGrid className={cn("w-4 h-4 transition-transform", activeTab === 'projects' && "scale-110")} />
+              Projects
+            </button>
+            <button
+              onClick={() => setActiveTab('labels')}
+              className={cn(
+                "flex items-center gap-3 px-8 py-3 rounded-2xl text-sm font-black uppercase tracking-widest transition-all duration-500",
+                activeTab === 'labels' 
+                  ? "bg-accent text-accent-foreground shadow-lg shadow-accent/25" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-white/5"
+              )}
+            >
+              <Tag className={cn("w-4 h-4 transition-transform", activeTab === 'labels' && "scale-110")} />
+              Labels
+            </button>
           </div>
-          
-          <button 
-            onClick={() => setShowFolderInput(showFolderInput === 'project' ? null : 'project')}
-            className={cn(
-              "flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm",
-              showFolderInput === 'project' 
-                ? "bg-neutral-200 dark:bg-neutral-800 text-foreground"
-                : "bg-blue-500 text-white hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/25"
+
+          <div className="flex items-center gap-3">
+            {activeTab === 'projects' && (
+              <AddProjectDialog>
+                <button className="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] bg-white dark:bg-neutral-800 text-foreground border border-border/60 hover:border-primary/40 hover:bg-primary/[0.02] transition-all shadow-sm active:scale-95">
+                  <Plus className="w-4 h-4 text-primary" />
+                  Add Project
+                </button>
+              </AddProjectDialog>
             )}
-          >
-            {showFolderInput === 'project' ? <X className="w-4 h-4" /> : <FolderPlus className="w-4 h-4" />}
-            {showFolderInput === 'project' ? 'Cancel' : 'New Folder'}
-          </button>
+            <button 
+              onClick={() => setShowFolderInput(!showFolderInput)}
+              className={cn(
+                "flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 shadow-lg",
+                showFolderInput 
+                  ? "bg-neutral-200 dark:bg-neutral-700 text-foreground"
+                  : activeTab === 'projects' 
+                    ? "bg-primary text-white hover:opacity-90 hover:shadow-primary/30"
+                    : "bg-accent text-accent-foreground hover:opacity-90 hover:shadow-accent/30"
+              )}
+            >
+              {showFolderInput ? <X className="w-4 h-4" /> : <FolderPlus className="w-4 h-4" />}
+              {showFolderInput ? 'Cancel' : 'New Folder'}
+            </button>
+          </div>
         </div>
 
-        {/* Create Folder Input Dropdown */}
-        <AnimatePresence>
-          {showFolderInput === 'project' && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0, y: -10 }}
-              animate={{ opacity: 1, height: 'auto', y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -10 }}
-              className="overflow-hidden"
-            >
-              <div className="flex items-center gap-3 p-2 bg-card/50 rounded-2xl border border-blue-500/30 backdrop-blur-md shadow-[0_0_15px_rgba(59,130,246,0.1)]">
-                <div className="pl-4">
-                  <Folder className="w-4 h-4 text-blue-500/50" />
-                </div>
-                <input 
-                  autoFocus
-                  className="bg-transparent border-none focus:ring-0 text-sm font-bold flex-1 placeholder:text-muted-foreground/40 outline-none text-foreground uppercase"
-                  placeholder="ENTER FOLDER NAME..."
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder('project')}
-                />
-                <button 
-                  onClick={() => handleCreateFolder('project')}
-                  disabled={!newFolderName.trim()}
-                  className="px-6 py-2 bg-blue-500 disabled:bg-blue-500/50 disabled:cursor-not-allowed text-white rounded-xl font-extrabold text-xs tracking-wider transition-colors"
-                >
-                  CREATE
-                </button>
+        {/* Search Bar */}
+        <div className="relative w-full max-w-2xl mx-auto group">
+          <div className="absolute inset-0 bg-primary/20 blur-[40px] opacity-0 group-hover:opacity-30 transition-opacity -z-10" />
+          <PlaceholdersAndVanishInput 
+            placeholders={[
+              "Filter your workspace...",
+              "Find active projects...",
+              "Locate specific labels...",
+              "Search with precision..."
+            ]}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onSubmit={(e) => e.preventDefault()}
+          />
+        </div>
+      </div>
+
+      {/* Create Folder Input Dropdown */}
+      <AnimatePresence>
+        {showFolderInput && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            className="overflow-hidden"
+          >
+            <div className={cn(
+              "flex items-center gap-4 p-2.5 bg-card/60 rounded-[2rem] border backdrop-blur-2xl shadow-2xl max-w-xl mx-auto transition-colors duration-500",
+              activeTab === 'projects' ? "border-primary/30 shadow-primary/5" : "border-accent/30 shadow-accent/5"
+            )}>
+              <div className="pl-5">
+                <Folder className={cn("w-5 h-5", activeTab === 'projects' ? "text-primary/70" : "text-accent/70")} />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        
-        <div className="space-y-12">
-          {/* Render Active Folders */}
-          <div className="space-y-6">
-            {folders.filter(f => f.type === 'project').map(folder => (
-              <FolderCard 
-                key={folder.id} 
-                folder={folder}
-                onDelete={() => deleteFolder(folder.id)}
-                onRename={(name) => updateFolder(folder.id, { name })}
+              <input 
+                autoFocus
+                className="bg-transparent border-none focus:ring-0 text-sm font-black flex-1 placeholder:text-muted-foreground/30 outline-none text-foreground uppercase tracking-widest"
+                placeholder={`NEW ${activeTab.toUpperCase()} FOLDER NAME...`}
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
+              />
+              <button 
+                onClick={handleCreateFolder}
+                disabled={!newFolderName.trim()}
+                className={cn(
+                  "px-8 py-3 rounded-[1.5rem] font-black text-xs tracking-widest transition-all shadow-md active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed",
+                  activeTab === 'projects' ? "bg-primary text-white" : "bg-accent text-accent-foreground"
+                )}
               >
-                {projectCounts
-                  .filter(([name]) => folder.itemIds.includes(name))
-                  .map(renderProjectItem)}
-              </FolderCard>
-            ))}
+                CREATE
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Content Area */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="space-y-16"
+        >
+          {/* Active Folders Section */}
+          <div className="space-y-10">
+            <div className="flex items-center gap-6">
+              <div className={cn(
+                "p-3 rounded-2xl shadow-inner",
+                activeTab === 'projects' ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"
+              )}>
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-[0.3em] text-foreground/90">Organized Folders</h3>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Structured collections</p>
+              </div>
+              <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-8">
+              {folders
+                .filter(f => f.type === (activeTab === 'projects' ? 'project' : 'tag'))
+                .map(folder => (
+                <FolderCard 
+                  key={folder.id} 
+                  folder={folder}
+                  onDelete={() => deleteFolder(folder.id)}
+                  onRename={(name) => updateFolder(folder.id, { name })}
+                >
+                  {activeTab === 'projects' 
+                    ? projectStats
+                        .filter(p => folder.itemIds.includes(p.name))
+                        .map(renderProjectItem)
+                    : tagCounts
+                        .filter(([name]) => folder.itemIds.includes(name))
+                        .map(renderTagItem)}
+                </FolderCard>
+              ))}
+            </div>
           </div>
 
-          {/* Uncategorized Projects */}
-          <div className="space-y-6 bg-neutral-50/50 dark:bg-neutral-900/20 p-6 rounded-3xl border border-border/40">
-            <div className="flex items-center gap-4 opacity-60">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Uncategorized Projects</span>
-              <div className="h-[1px] flex-1 bg-gradient-to-r from-border to-transparent" />
+          {/* Uncategorized Section */}
+          <div className="space-y-10 bg-muted/20 p-10 rounded-[3rem] border border-border/40 backdrop-blur-md relative overflow-hidden">
+            <div className={cn(
+              "absolute top-0 right-0 w-64 h-64 blur-[100px] opacity-[0.03] -z-10",
+              activeTab === 'projects' ? "bg-primary" : "bg-accent"
+            )} />
+
+            <div className="flex items-center gap-6">
+              <div className="p-3 rounded-2xl bg-muted text-muted-foreground shadow-inner">
+                <Filter className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase tracking-[0.3em] text-muted-foreground">Uncategorized Items</h3>
+                <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest mt-1">Standalone resources</p>
+              </div>
+              <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
             </div>
+
             <motion.div 
               variants={container}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+              className={cn(
+                "grid gap-6",
+                activeTab === 'projects' 
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" 
+                  : "flex flex-wrap gap-4"
+              )}
             >
-              {projectCounts
-                .filter(([name]) => !folders.some(f => f.type === 'project' && f.itemIds.includes(name)))
-                .map(renderProjectItem)}
+              {activeTab === 'projects'
+                ? projectStats
+                    .filter(p => !folders.some(f => f.type === 'project' && f.itemIds.includes(p.name)))
+                    .map(renderProjectItem)
+                : tagCounts
+                    .filter(([name]) => !folders.some(f => f.type === 'tag' && f.itemIds.includes(name)))
+                    .map(renderTagItem)}
             </motion.div>
           </div>
-        </div>
-      </section>
-
-      {/* --- Labels Section --- */}
-      <section className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 flex items-center justify-center shadow-inner">
-              <Tag className="w-6 h-6 text-accent" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-black tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                LABELS
-              </h2>
-              <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest mt-1">Categorize your focus</p>
-            </div>
-          </div>
-          
-          <button 
-            onClick={() => setShowFolderInput(showFolderInput === 'tag' ? null : 'tag')}
-            className={cn(
-              "flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm",
-              showFolderInput === 'tag' 
-                ? "bg-neutral-200 dark:bg-neutral-800 text-foreground"
-                : "bg-accent text-accent-foreground hover:opacity-90 hover:shadow-lg hover:shadow-accent/25"
-            )}
-          >
-            {showFolderInput === 'tag' ? <X className="w-4 h-4" /> : <FolderPlus className="w-4 h-4" />}
-            {showFolderInput === 'tag' ? 'Cancel' : 'New Folder'}
-          </button>
-        </div>
-
-        {/* Create Tag Folder Input Dropdown */}
-        <AnimatePresence>
-          {showFolderInput === 'tag' && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0, y: -10 }}
-              animate={{ opacity: 1, height: 'auto', y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -10 }}
-              className="overflow-hidden"
-            >
-              <div className="flex items-center gap-3 p-2 bg-card/50 rounded-2xl border border-accent/30 backdrop-blur-md shadow-[0_0_15px_rgba(var(--accent),0.1)]">
-                <div className="pl-4">
-                  <Folder className="w-4 h-4 text-accent/50" />
-                </div>
-                <input 
-                  autoFocus
-                  className="bg-transparent border-none focus:ring-0 text-sm font-bold flex-1 placeholder:text-muted-foreground/40 outline-none text-foreground uppercase"
-                  placeholder="ENTER FOLDER NAME..."
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder('tag')}
-                />
-                <button 
-                  onClick={() => handleCreateFolder('tag')}
-                  disabled={!newFolderName.trim()}
-                  className="px-6 py-2 bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-accent-foreground rounded-xl font-extrabold text-xs tracking-wider transition-colors"
-                >
-                  CREATE
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="space-y-12">
-          {/* Render Active Folders */}
-          <div className="space-y-6">
-            {folders.filter(f => f.type === 'tag').map(folder => (
-              <FolderCard 
-                key={folder.id} 
-                folder={folder}
-                onDelete={() => deleteFolder(folder.id)}
-                onRename={(name) => updateFolder(folder.id, { name })}
-              >
-                {tagCounts
-                  .filter(([name]) => folder.itemIds.includes(name))
-                  .map(renderTagItem)}
-              </FolderCard>
-            ))}
-          </div>
-
-          {/* Uncategorized Tags */}
-          <div className="space-y-6 bg-neutral-50/50 dark:bg-neutral-900/20 p-6 rounded-3xl border border-border/40">
-            <div className="flex items-center gap-4 opacity-60">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Uncategorized Tags</span>
-              <div className="h-[1px] flex-1 bg-gradient-to-r from-border to-transparent" />
-            </div>
-            <motion.div 
-              variants={container}
-              initial="hidden"
-              animate="show"
-              className="flex flex-wrap gap-3"
-            >
-              {tagCounts
-                .filter(([name]) => !folders.some(f => f.type === 'tag' && f.itemIds.includes(name)))
-                .map(renderTagItem)}
-            </motion.div>
-          </div>
-        </div>
-      </section>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
-}
+}

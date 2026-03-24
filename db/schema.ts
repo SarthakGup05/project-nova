@@ -36,3 +36,11 @@ export const projects = pgTable('projects', {
   isFavorite: boolean('is_favorite').default(false),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
+
+export const globalNotifications = pgTable('global_notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  type: text('type').default('info'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});

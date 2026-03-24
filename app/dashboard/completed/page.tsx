@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTaskStore } from '@/store/useTaskStore';
 import { TaskItem } from '@/components/dashboard/TaskItem';
 import { CheckCircle2, Inbox } from 'lucide-react';
+import { EmptyState } from '@/components/dashboard/EmptyState';
 
 export default function CompletedTasksPage() {
   const tasks = useTaskStore((state) => state.tasks);
@@ -35,19 +36,10 @@ export default function CompletedTasksPage() {
               ))}
             </motion.ul>
           ) : (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center py-20 text-center"
-            >
-              <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
-                <Inbox className="w-8 h-8 text-muted-foreground/40" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground">No completed tasks yet</h3>
-              <p className="text-sm text-muted-foreground max-w-[250px] mx-auto mt-1">
-                Tasks you finish will magically appear here for your records.
-              </p>
-            </motion.div>
+            <EmptyState 
+              title="No completions yet" 
+              description="Tasks you finish will magically appear here. Time to get productive!"
+            />
           )}
         </AnimatePresence>
       </div>

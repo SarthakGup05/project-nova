@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { useNotificationStore } from './useNotificationStore';
 
 // Define the local Task interface based on db/schema.ts
 export interface Task {
@@ -70,6 +71,8 @@ interface TaskState {
   deleteFolder: (id: string) => Promise<void>;
   addItemToFolder: (folderId: string, itemId: string) => Promise<void>;
   removeItemFromFolder: (folderId: string, itemId: string) => Promise<void>;
+  renameTag: (oldTag: string, newTag: string) => Promise<void>;
+  deleteTag: (tag: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>()(
@@ -121,6 +124,13 @@ export const useTaskStore = create<TaskState>()(
 
         // Step 1: Immediate local update (Zero Latency)
         set((state) => ({ tasks: [...state.tasks, newTask] }));
+        
+        // Trigger Notification
+        useNotificationStore.getState().addNotification({
+          type: 'info',
+          title: 'Task Created',
+          message: `"${taskDetails.title}" has been added to your list.`
+        });
 
         // Step 2: Background sync
         get().syncAll();
@@ -144,6 +154,13 @@ export const useTaskStore = create<TaskState>()(
 
         // Step 1: Immediate local removal
         set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
+        
+        // Trigger Notification
+        useNotificationStore.getState().addNotification({
+          type: 'warning',
+          title: 'Task Deleted',
+          message: `"${taskToDelete.title}" was removed.`
+        });
 
         // Step 2: Background sync delete
         if (taskToDelete.syncStatus !== 'pending') {
@@ -171,6 +188,15 @@ export const useTaskStore = create<TaskState>()(
         set((state) => ({
           tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates, syncStatus: 'pending' } : t)),
         }));
+
+        // Trigger Notification on completion
+        if (newCompletionState) {
+          useNotificationStore.getState().addNotification({
+            type: 'success',
+            title: 'Task Completed!',
+            message: `Well done on finishing "${task.title}".`
+          });
+        }
 
         // Step 2: Background sync
         get().syncAll();
@@ -232,6 +258,14 @@ export const useTaskStore = create<TaskState>()(
         };
 
         set((state) => ({ projects: [...state.projects, newProject] }));
+
+        // Trigger Notification
+        useNotificationStore.getState().addNotification({
+          type: 'achievement',
+          title: 'New Project!',
+          message: `"${name}" is now part of your workspace.`
+        });
+
         get().syncProjects();
       },
 
@@ -322,6 +356,68 @@ export const useTaskStore = create<TaskState>()(
               : f
           )
         }));
+      },
+      renameTag: async (oldTag: string, newTag: string) => {
+        // Step 1: Update tasks
+        set((state) => ({
+          tasks: state.tasks.map(task => {
+            if (task.tags?.includes(oldTag)) {
+              return {
+                ...task,
+                tags: task.tags.map(t => t === oldTag ? newTag : t),
+                syncStatus: 'pending'
+              };
+            }
+            return task;
+          })
+        }));
+
+        // Step 2: Update folders that contain this tag
+        set((state) => ({
+          folders: state.folders.map(f => {
+            if (f.type === 'tag' && f.itemIds.includes(oldTag)) {
+              return {
+                ...f,
+                itemIds: f.itemIds.map(t => t === oldTag ? newTag : t)
+              };
+            }
+            return f;
+          })
+        }));
+
+        // Step 3: Trigger background sync
+        get().syncAll();
+      },
+      deleteTag: async (tag: string) => {
+        // Step 1: Update tasks
+        set((state) => ({
+          tasks: state.tasks.map(task => {
+            if (task.tags?.includes(tag)) {
+              return {
+                ...task,
+                tags: task.tags.filter(t => t !== tag),
+                syncStatus: 'pending'
+              };
+            }
+            return task;
+          })
+        }));
+
+        // Step 2: Update folders
+        set((state) => ({
+          folders: state.folders.map(f => {
+            if (f.type === 'tag' && f.itemIds.includes(tag)) {
+              return {
+                ...f,
+                itemIds: f.itemIds.filter(t => t !== tag)
+              };
+            }
+            return f;
+          })
+        }));
+
+        // Step 3: Trigger background sync
+        get().syncAll();
       },
     }),
     {
