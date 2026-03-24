@@ -7,11 +7,13 @@ import {
   Circle, 
   Hash,
   MoreHorizontal,
-  Trash2
+  Trash2,
+  PlusCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTaskStore } from '@/store/useTaskStore';
 import { AddTaskDialog } from './AddTaskDialog';
+import { EmptyState } from './EmptyState';
 
 // 1. Shared audio instance for TodayView tasks
 let checkSound: HTMLAudioElement | null = null;
@@ -52,25 +54,47 @@ export function TodayView({ userId }: { userId: string }) {
     <div className="max-w-4xl mx-auto w-full py-8 px-4 sm:px-8">
       {/* Task List Section */}
       <div className="space-y-1">
-        <AnimatePresence initial={false}>
-          {activeTasks.map((task) => (
-            <TaskItem 
-              key={task.id} 
-              task={{
-                id: task.id,
-                title: task.title,
-                projectName: task.project || 'Inbox',
-                isCompleted: task.isCompleted || false,
-                projectColor: 'text-accent'
-              }} 
-              onToggle={() => handleToggle(task.id)} 
+        <AnimatePresence initial={false} mode="wait">
+          {activeTasks.length > 0 ? (
+            <>
+              {activeTasks.map((task) => (
+                <TaskItem 
+                  key={task.id} 
+                  task={{
+                    id: task.id,
+                    title: task.title,
+                    projectName: task.project || 'Inbox',
+                    isCompleted: task.isCompleted || false,
+                    projectColor: 'text-accent'
+                  }} 
+                  onToggle={() => handleToggle(task.id)} 
+                />
+              ))}
+              {/* Add Task Button wrapped in Dialog at the bottom of the list */}
+              <div className="mt-6">
+                <AddTaskDialog userId={userId} />
+              </div>
+            </>
+          ) : (
+            <EmptyState 
+              title="All caught up!" 
+              description="Your day looks clear. Enjoy the peace or start something new!"
+              action={
+                <AddTaskDialog userId={userId}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-8 py-3 rounded-2xl bg-red-500 text-white font-bold shadow-xl shadow-red-500/20 hover:bg-red-600 transition-all flex items-center gap-2 mx-auto"
+                  >
+                    <PlusCircle className="w-5 h-5" />
+                    Create First Task
+                  </motion.button>
+                </AddTaskDialog>
+              }
             />
-          ))}
+          )}
         </AnimatePresence>
       </div>
-
-      {/* Add Task Button wrapped in Dialog */}
-      <AddTaskDialog userId={userId} />
     </div>
   );
 }

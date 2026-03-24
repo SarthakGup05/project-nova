@@ -11,24 +11,37 @@ import {
   PlayCircle,
   Clock,
   CheckCircle2,
-  Circle
+  Circle,
+  Trash2,
+  PlusCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-// Removed date-fns import to fix "Module not found" error
+import { EmptyState } from '@/components/dashboard/EmptyState';
+import { AddTaskDialog } from '@/components/dashboard/AddTaskDialog';
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 export default function ProjectPage() {
   const params = useParams();
   const projectName = decodeURIComponent(params.name as string);
   const tasks = useTaskStore((state) => state.tasks);
   const updateTask = useTaskStore((state) => state.updateTask);
+  const [user, setUser] = useState<User | null>(null);
+  
+  const supabase = createClient();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+  }, [supabase]);
   
   const projectTasks = useMemo(() => {
     return tasks.filter(t => t.project === projectName);
   }, [tasks, projectName]);
 
   // Group tasks by a simple logic for now: Active and Completed
-  // In a real app, you might have a 'section' field.
   const groupedTasks = useMemo(() => {
     const activeTasks = projectTasks.filter(t => !t.isCompleted);
     const completedTasks = projectTasks.filter(t => t.isCompleted);
@@ -41,12 +54,23 @@ export default function ProjectPage() {
 
   if (projectTasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="w-20 h-20 mb-6 bg-accent/5 rounded-full flex items-center justify-center">
-          <Circle className="w-10 h-10 opacity-20" />
-        </div>
-        <h2 className="text-xl font-semibold text-foreground">No tasks in this project</h2>
-        <p className="max-w-xs text-center mt-2">Start adding tasks to see them organized here.</p>
+      <div className="max-w-4xl w-full mx-auto px-6 py-20">
+        <EmptyState 
+          title="No tasks here" 
+          description={`Project "${projectName}" is currently empty. Start adding tasks to see them organized!`}
+          action={
+            <AddTaskDialog userId={user?.id || ""}>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-3 rounded-2xl bg-red-500 text-white font-bold shadow-xl shadow-red-500/20 hover:bg-red-600 transition-all flex items-center gap-2 mx-auto"
+              >
+                <PlusCircle className="w-5 h-5" />
+                Create Task in {projectName}
+              </motion.button>
+            </AddTaskDialog>
+          }
+        />
       </div>
     );
   }
@@ -132,6 +156,7 @@ function TaskGroup({
 
 function ProjectTaskItem({ task, onToggle }: { task: Task; onToggle: () => void }) {
   const prevIsCompleted = useRef(task.isCompleted);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
 
   useEffect(() => {
     if (task.isCompleted && !prevIsCompleted.current) {
@@ -162,7 +187,7 @@ function ProjectTaskItem({ task, onToggle }: { task: Task; onToggle: () => void 
       </button>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
           <div className="relative inline-flex w-fit max-w-full">
             <p className={cn(
               "text-base font-medium transition-colors duration-300 block truncate",
@@ -184,6 +209,18 @@ function ProjectTaskItem({ task, onToggle }: { task: Task; onToggle: () => void 
             </AnimatePresence>
           </div>
 
+          <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 focus-within:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                deleteTask(task.id);
+              }}
+              className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500 transition-colors"
+              title="Delete task"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
         
         {task.contextDraft && (
