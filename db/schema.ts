@@ -9,6 +9,7 @@ export const profiles = pgTable('profiles', {
   longestStreak: integer('longest_streak').default(0),
   freezeTokens: integer('freeze_tokens').default(0),
   notificationPersonality: text('notification_personality').default('cheeky'),
+  hasOnboarded: boolean('has_onboarded').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 
