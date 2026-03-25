@@ -14,6 +14,7 @@ import { useNotificationStore } from '@/store/useNotificationStore';
 import { NotificationDrawer } from './NotificationDrawer';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
+import { ModeToggle } from './ModeToggle';
 
 interface DashboardHeaderProps {
   user: User | null;
@@ -88,7 +89,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         
         {/* Left: Search / Context */}
         <div className="flex items-center gap-4 flex-1">
-          <div className="relative group hidden md:block max-w-md w-full">
+          <div id="header-search" className="relative group hidden md:block max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
             <input 
               type="text" 
@@ -140,6 +141,9 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
               onClose={() => setShowDrawer(false)} 
             />
           </div>
+
+          {/* Theme Toggle */}
+          <ModeToggle />
 
           {/* User Profile */}
           <Link 

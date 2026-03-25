@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 
 // Inter is the gold standard for clean, modern SaaS interfaces
 const inter = Inter({
@@ -32,11 +33,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // Removed the "dark" class so the default light theme variables apply
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       {/* antialiased makes the font render slightly thinner and crisper on modern displays */}
       <body className="font-sans bg-background text-foreground antialiased min-h-screen">
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
