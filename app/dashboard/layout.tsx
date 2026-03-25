@@ -26,6 +26,7 @@ import { AddProjectDialog } from '@/components/dashboard/AddProjectDialog';
 import { NotificationToast } from '@/components/dashboard/NotificationToast';
 import { BroadcastNotification } from '@/components/admin/BroadcastNotification';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { OnboardingTour } from '@/components/dashboard/OnboardingTour';
 
 export default function DashboardLayout({
   children,
@@ -33,6 +34,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [showTour, setShowTour] = useState(false);
   const [open, setOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
@@ -58,10 +61,37 @@ export default function DashboardLayout({
   }, [projectsFromStore, pathname]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    async function getInitialData() {
+      const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-    });
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        setProfile(profile);
+        if (profile && !profile.has_onboarded) {
+          setShowTour(true);
+        }
+      }
+    }
+    getInitialData();
   }, [supabase]);
+
+  const handleTourComplete = async () => {
+    setShowTour(false);
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ has_onboarded: true })
+        .eq('id', user.id);
+      
+      setProfile((prev: any) => (prev ? { ...prev, has_onboarded: true } : prev));
+    }
+  };
 
   // Global Notifications Realtime Listener
   useEffect(() => {
@@ -111,6 +141,7 @@ export default function DashboardLayout({
   };
 
   const links = [
+// ... (rest of the code)
     {
       label: "Add task",
       href: "#",
@@ -180,6 +211,7 @@ export default function DashboardLayout({
             {projectLinks.length > 0 && (
               <SidebarGroup 
                 label="Projects" 
+                id="sidebar-projects"
                 action={
                   <button 
                     onClick={(e) => {
@@ -254,6 +286,8 @@ export default function DashboardLayout({
 
       <NotificationToast />
       <BroadcastNotification />
+
+      {showTour && <OnboardingTour onComplete={handleTourComplete} />}
     </div>
   );
 }

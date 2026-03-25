@@ -237,16 +237,18 @@ export const SidebarGroup = ({
   children,
   className,
   action,
+  id,
 }: {
   label: string;
   children: React.ReactNode;
   className?: string;
   action?: React.ReactNode;
+  id?: string;
 }) => {
   const { open, animate } = useSidebar();
   
   return (
-    <div className={cn("flex flex-col gap-1 mt-6", className)}>
+    <div id={id} className={cn("flex flex-col gap-1 mt-6", className)}>
       <motion.div
         animate={{
           opacity: animate ? (open ? 1 : 0) : 1,
