@@ -113,7 +113,7 @@ export function MonthGrid({ selectedDate, onDayClick, onAddTaskClick }: MonthGri
                       onDayClick(date); // Select the day visually
                       onAddTaskClick(date); // Open the dialog
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-background rounded-md transition-all text-muted-foreground hover:text-foreground border border-transparent hover:border-border shadow-sm hover:shadow"
+                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 hover:bg-background rounded-md transition-all text-muted-foreground hover:text-foreground border border-transparent hover:border-border shadow-sm hover:shadow"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>

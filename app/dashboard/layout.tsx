@@ -307,7 +307,7 @@ export default function DashboardLayout({
       />
 
       <NotificationToast />
-      <BroadcastNotification />
+      <BroadcastNotification isAdmin={user?.email === 'rythmgupta@outlook.com' || user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL} />
 
       {showTour && <OnboardingTour onComplete={handleTourComplete} />}
     </div>

@@ -157,7 +157,7 @@ export function AddTaskDialog({
         )}
       </DialogTrigger>
       
-      <DialogContent className="sm:max-w-xl bg-background/95 backdrop-blur-2xl border-accent/20 overflow-hidden rounded-3xl shadow-2xl p-0">
+      <DialogContent className="sm:max-w-xl bg-background/95 backdrop-blur-2xl border-accent/20 overflow-hidden rounded-[2rem] sm:rounded-3xl shadow-2xl p-0 w-[95%] sm:w-full max-h-[90vh] flex flex-col">
         <AnimatePresence>
           {isSubmitted ? (
             <motion.div 
@@ -185,7 +185,7 @@ export function AddTaskDialog({
                 </motion.div>
               </div>
               <h2 className="text-2xl font-bold mb-2">Task Created!</h2>
-              <p className="text-muted-foreground">Successfully vanished "{taskTitle}" into your list.</p>
+              <p className="text-muted-foreground">Successfully vanished &quot;{taskTitle}&quot; into your list.</p>
             </motion.div>
           ) : (
             <>
@@ -197,7 +197,7 @@ export function AddTaskDialog({
                 </div>
               </DialogHeader>
               
-              <div className="px-6 py-6 flex flex-col gap-4">
+              <div className="px-4 sm:px-6 py-4 sm:py-6 flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1">
                 <div className="relative">
                   <PlaceholdersAndVanishInput
                     placeholders={placeholders}
@@ -207,7 +207,7 @@ export function AddTaskDialog({
                 </div>
 
                 {/* Description & Priority Fields */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setShowDescription(!showDescription)}
@@ -222,7 +222,7 @@ export function AddTaskDialog({
                     {showDescription ? "Hide Notes" : "Add Notes"}
                   </button>
                   
-                  <div className="h-4 w-px bg-border/50 mx-1" />
+                  <div className="hidden sm:block h-4 w-px bg-border/50 mx-1" />
                   
                   {PRESET_PRIORITIES.map((p) => (
                     <button
@@ -263,7 +263,7 @@ export function AddTaskDialog({
 
                 {/* Interactive Toolbar */}
                 <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-border/40">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <ToolbarButton 
                       icon={<Folder className="w-4 h-4 text-blue-500" />} 
                       label={selectedProject} 

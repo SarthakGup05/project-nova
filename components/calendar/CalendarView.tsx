@@ -59,16 +59,16 @@ export function CalendarView() {
   return (
     <div className="flex flex-col h-full bg-background/50 backdrop-blur-xl rounded-3xl border border-border/50 overflow-hidden shadow-2xl relative">
       {/* Calendar Header */}
-      <div className="flex items-center justify-between px-8 py-6 border-b border-border/50 bg-secondary/20">
-        <div className="flex items-center gap-6">
-          <div className="h-12 w-12 rounded-2xl bg-accent shadow-lg shadow-accent/20 flex items-center justify-center text-accent-foreground">
-            <CalendarIcon className="w-6 h-6" />
+      <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-8 py-4 sm:py-6 border-b border-border/50 bg-secondary/20 gap-4 sm:gap-0">
+        <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto">
+          <div className="shrink-0 h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-accent shadow-lg shadow-accent/20 flex items-center justify-center text-accent-foreground">
+            <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div className="flex flex-col">
-            <h2 className="text-3xl font-black tracking-tighter text-foreground">
+          <div className="flex flex-col flex-1">
+            <h2 className="text-xl sm:text-3xl font-black tracking-tighter text-foreground truncate">
               {formattedMonth}
             </h2>
-            <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em]">
+            <p className="text-[10px] sm:text-xs text-muted-foreground font-bold uppercase tracking-[0.2em]">
               {formattedYear}
             </p>
           </div>

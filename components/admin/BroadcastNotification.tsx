@@ -8,12 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useNotificationStore } from '@/store/useNotificationStore';
 
-export function BroadcastNotification() {
+export function BroadcastNotification({ isAdmin }: { isAdmin?: boolean }) {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [type, setType] = useState<'info' | 'warning' | 'achievement' | 'ai' | 'success'>('info');
   const [isSending, setIsSending] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+
+  if (!isAdmin) return null;
+
 
   const handleSend = async () => {
     if (!title || !message) return;

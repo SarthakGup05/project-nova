@@ -128,7 +128,7 @@ export default function ProfilePage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className="flex flex-row items-center gap-3 w-full md:w-auto pt-4 md:pt-0"
+              className="flex flex-wrap justify-center md:justify-start items-center gap-3 w-full md:w-auto pt-4 md:pt-0"
             >
               <Button 
                 variant="outline" 
@@ -209,7 +209,7 @@ export default function ProfilePage() {
                 <div>
                   <h3 className="text-lg font-bold text-foreground mb-2">Peak Hours</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    You're most productive between <strong className="text-foreground">10 AM and 12 PM</strong>. Try scheduling your "Deep Work" sessions during this window for maximum efficiency.
+                    You&apos;re most productive between <strong className="text-foreground">10 AM and 12 PM</strong>. Try scheduling your &quot;Deep Work&quot; sessions during this window for maximum efficiency.
                   </p>
                 </div>
               </div>
