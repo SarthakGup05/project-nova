@@ -75,6 +75,13 @@ export default function RootLayout({
                           };
                         }
                       };
+
+                      // Eagerly check for OTA updates every time the app comes to foreground
+                      document.addEventListener('visibilitychange', () => {
+                        if (document.visibilityState === 'visible') {
+                          registration.update();
+                        }
+                      });
                     },
                     function(err) {
                       console.log('Service Worker registration failed: ', err);
@@ -87,6 +94,5 @@ export default function RootLayout({
         />
       </body>
     </html>
-
   );
 }
