@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nova-cache-v1';
+const CACHE_NAME = 'nova-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/dashboard',
@@ -12,7 +12,14 @@ self.addEventListener('install', (event) => {
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
-  self.skipWaiting();
+  // Do NOT skip waiting immediately. Wait for the user to click "Update"
+  // self.skipWaiting(); 
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {
@@ -31,40 +38,74 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests
   if (event.request.method !== 'GET') return;
 
-  // Clone the request because it's a stream and can only be consumed once
-  const request = event.request;
-
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      return fetch(request)
-        .then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
+  const url = new URL(event.request.url);
+  
+  // 1. API Requests: Network First, fallback to Cache
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
           }
-
-          // Clone the response because it's a stream and can only be consumed once
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-
-          return response;
+          return networkResponse;
         })
-        .catch(() => {
-          // If fetch fails (offline), and it's a navigation request, return cached dashboard if available
-          if (request.mode === 'navigate') {
-            return caches.match('/dashboard');
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // 2. Static Assets (Next.js chunks, images, fonts): Cache First + SWR
+  if (
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/fonts/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.includes('.png') ||
+    url.pathname.includes('.svg')
+  ) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        const fetchPromise = fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, networkResponse.clone());
+            });
           }
+          return networkResponse;
+        }).catch(() => {
+          console.warn("Background fetch failed for static asset:", event.request.url);
         });
+
+        // Return cached instantly, or wait for network if not cached
+        return cachedResponse || fetchPromise;
+      })
+    );
+    return;
+  }
+
+  // 3. Document / App Shell: SWR (Stale-While-Revalidate)
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // If offline and it's a navigation request, try serving cached dashboard
+        if (event.request.mode === 'navigate') {
+          return caches.match('/dashboard');
+        }
+      });
+
+      return cachedResponse || fetchPromise;
     })
   );
 });

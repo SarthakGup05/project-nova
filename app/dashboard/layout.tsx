@@ -29,6 +29,7 @@ import { useNotificationStore } from '@/store/useNotificationStore';
 import { OnboardingTour } from '@/components/dashboard/OnboardingTour';
 import { BottomNav } from '@/components/shared/BottomNav';
 import { OfflineAlert } from '@/components/shared/OfflineAlert';
+import { OTAUpdateToast } from '@/components/shared/OTAUpdateToast';
 import { AnimatePresence } from 'framer-motion';
 
 export default function DashboardLayout({
@@ -291,6 +292,7 @@ export default function DashboardLayout({
 
       {/* Offline Status */}
       <OfflineAlert />
+      <OTAUpdateToast />
 
       {/* Global Add Task Dialog */}
       <AddTaskDialog

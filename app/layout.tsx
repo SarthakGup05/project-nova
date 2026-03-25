@@ -63,6 +63,18 @@ export default function RootLayout({
                   navigator.serviceWorker.register('/sw.js').then(
                     function(registration) {
                       console.log('Service Worker registration successful with scope: ', registration.scope);
+                      
+                      registration.onupdatefound = () => {
+                        const installingWorker = registration.installing;
+                        if (installingWorker) {
+                          installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                              // New update available
+                              window.dispatchEvent(new Event('pwa-update-available'));
+                            }
+                          };
+                        }
+                      };
                     },
                     function(err) {
                       console.log('Service Worker registration failed: ', err);
@@ -75,5 +87,6 @@ export default function RootLayout({
         />
       </body>
     </html>
+
   );
 }
