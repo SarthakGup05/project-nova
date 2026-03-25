@@ -27,6 +27,9 @@ import { NotificationToast } from '@/components/dashboard/NotificationToast';
 import { BroadcastNotification } from '@/components/admin/BroadcastNotification';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { OnboardingTour } from '@/components/dashboard/OnboardingTour';
+import { BottomNav } from '@/components/shared/BottomNav';
+import { OfflineAlert } from '@/components/shared/OfflineAlert';
+import { AnimatePresence } from 'framer-motion';
 
 export default function DashboardLayout({
   children,
@@ -197,8 +200,9 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-accent/30">
-      <Sidebar open={open} setOpen={setOpen}>
+    <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-accent/30 flex-col md:flex-row">
+      <div className="hidden md:flex h-full">
+        <Sidebar open={open} setOpen={setOpen}>
         <SidebarBody className="justify-between gap-10 border-r border-border/40 bg-background/50 backdrop-blur-xl">
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
             <Logo open={open} />
@@ -264,11 +268,29 @@ export default function DashboardLayout({
           </div>
         </SidebarBody>
       </Sidebar>
+      </div>
 
-      <main className="flex-1 overflow-y-auto bg-background relative flex flex-col items-center">
+      <main className="flex-1 overflow-y-auto bg-background relative flex flex-col items-center pb-24 md:pb-0">
         <DashboardHeader user={user} />
-        {children}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="w-full h-full flex flex-col items-center"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
+
+      {/* Mobile-Only Navigation */}
+      <BottomNav onAddTask={() => setIsTaskDialogOpen(true)} />
+
+      {/* Offline Status */}
+      <OfflineAlert />
 
       {/* Global Add Task Dialog */}
       <AddTaskDialog
