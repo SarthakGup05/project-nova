@@ -9,7 +9,8 @@ import {
   LayoutGrid, 
   User, 
   Plus,
-  CalendarDays
+  CalendarDays,
+  Trophy
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -45,6 +46,11 @@ const navItems: NavItem[] = [
     label: 'Profile',
     href: '/dashboard/profile',
     icon: <User className="w-5 h-5" />,
+  },
+  {
+    label: 'Awards',
+    href: '/dashboard/achievements',
+    icon: <Trophy className="w-5 h-5" />,
   },
 ];
 

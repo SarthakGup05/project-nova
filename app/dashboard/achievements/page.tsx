@@ -68,7 +68,7 @@ export default function AchievementsPage() {
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="w-full max-w-6xl mx-auto px-6 py-10 pb-20 relative"
+      className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 pb-24 sm:pb-20 relative"
     >
       {/* Subtle Background Glows */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
